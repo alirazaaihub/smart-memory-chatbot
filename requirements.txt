@@ -1,0 +1,9 @@
+langchain
+langchain-groq
+langchain-huggingface
+langchain-chroma
+langchain-core
+langchain-community
+sentence-transformers
+chromadb
+duckduckgo-search
