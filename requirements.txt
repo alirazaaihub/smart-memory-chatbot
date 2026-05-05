@@ -1,9 +1,10 @@
 langchain
 langchain-groq
-langchain-huggingface
-langchain-chroma
-langchain-core
+langchain-google-genai
 langchain-community
-sentence-transformers
+langchain-chroma
+langgraph
+fastapi
+uvicorn
+pydantic
 chromadb
-duckduckgo-search
