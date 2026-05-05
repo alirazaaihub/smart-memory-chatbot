@@ -1,178 +1,235 @@
-🤖 Smart Routing Agent
-An agentic AI system that intelligently routes user queries to the most appropriate knowledge source — RAG pipeline, web search, or direct LLM generation — using structured output-based decision making, dual-layer memory, and a fully async LangGraph execution engine.
+# 🤖 Smart Routing Agent
 
-🚀 What Makes This Different
+An agentic AI system that intelligently routes user queries to the most appropriate knowledge source — **RAG pipeline, web search, or direct LLM generation** — using structured output-based decision making, dual-layer memory, and a fully async LangGraph execution engine.
+
+---
+
+## 🚀 What Makes This Different
+
 Basic chatbots just pass every query to an LLM. This system:
 
-Classifies every query using structured LLM output — no string parsing, no hallucinated routing
-Retrieves from a persistent vector knowledge base for domain-specific questions
-Hits live web search for real-time and current-event queries
-Automatically extracts and stores permanent user facts in a separate long-term memory layer
-Maintains thread-isolated conversation history — no cross-user state contamination
-Compresses long conversations automatically to stay within context limits
+- Classifies every query using structured LLM output — no string parsing, no hallucinated routing  
+- Retrieves from a persistent vector knowledge base for domain-specific questions  
+- Uses live web search for real-time and current-event queries  
+- Automatically extracts and stores permanent user facts in long-term memory  
+- Maintains thread-isolated sessions (no cross-user contamination)  
+- Compresses long conversations automatically to stay within context limits  
 
+**Example:**
+> User: "Latest trends in AI?" → Web search  
+> User: "Explain my uploaded docs" → RAG  
+> User: "Explain recursion" → Direct LLM  
 
-✨ Features
+---
 
-🔀 Structured Output Routing — RouteDecision schema enforces strict rag / web / llm classification
-🧠 Dual-Layer Memory — Short-term via LangGraph MemorySaver + Long-term via persistent ChromaDB
-⚡ Fully Async Execution — All nodes are async; sync DB calls offloaded via asyncio.to_thread()
-🔒 Thread-Aware Sessions — Each user_id gets an isolated conversation thread
-💬 Auto Summarization — Conversation history beyond 10 messages is auto-compressed
-🌐 REST API — Clean FastAPI interface for easy frontend or service integration
+## ✨ Features
 
+- 🔀 **Structured Output Routing** — strict schema-based decision (`rag | web | llm`)  
+- 🧠 **Dual-Layer Memory** — short-term (MemorySaver) + long-term (ChromaDB)  
+- ⚡ **Fully Async Execution** — async nodes + `asyncio.to_thread()` for blocking calls  
+- 🔒 **Thread-Aware Sessions** — each `user_id` has isolated state  
+- 💬 **Auto Summarization** — compresses conversations beyond 10 messages  
+- 🌐 **REST API** — clean FastAPI backend for integration  
 
-🛠️ Tech Stack
-ComponentTechnologyLLMLLaMA 3.3 70B via GroqEmbeddingsGemini Embedding 001 (Google)Vector StoreChromaDB (persistent)Agent FrameworkLangGraph (StateGraph)Web SearchDuckDuckGo API WrapperAPI LayerFastAPI + UvicornMemoryLangGraph MemorySaver + ChromaDB
+---
 
-⚙️ Architecture
-Routing & Generation Flow
+## 🛠️ Tech Stack
+
+| Component | Technology |
+|----------|------------|
+| Agent Framework | LangGraph |
+| LLM | LLaMA 3.3 70B (Groq) |
+| Embeddings | Gemini Embedding 001 |
+| Vector Store | ChromaDB |
+| Web Search | DuckDuckGo |
+| Backend API | FastAPI + Uvicorn |
+| Memory | MemorySaver + ChromaDB |
+
+---
+
+## ⚙️ System Architecture
+
+### Routing & Generation Flow
+
+```
 User Query
-    │
-    ▼
-┌─────────────┐    RouteDecision (structured output)
-│ Router Node │ ──────────────────────────────────────┐
-│ (LLaMA 70B) │                                       │
-└─────────────┘                                       │
-       │                                              │
-       ├──── rag ──► ┌──────────────┐                 │
-       │             │ RAG Retrieve │ ─► Chroma        │
-       │             └──────┬───────┘   Vector DB      │
-       │                    │                          │
-       ├──── web ──► ┌──────────────┐                  │
-       │             │  Web Search  │ ─► DuckDuckGo    │
-       │             └──────┬───────┘                  │
-       │                    │                          │
-       └──── llm ──► ┌──────────────┐                  │
-                     │  LLM Direct  │ ◄────────────────┘
-                     └──────┬───────┘
-                            │
-                            ▼
-                   ┌─────────────────┐
-                   │  Generate Node  │ ◄── Long-Term Memory
-                   │  (+ User Facts) │     (Chroma user_db)
-                   └────────┬────────┘
-                            │
-                            ▼
-                   ┌─────────────────┐
-                   │ Summarize Node  │  (auto-compresses >10 msgs)
-                   └────────┬────────┘
-                            │
-                            ▼
-                         Response
-Memory Architecture
-LayerBackendScopeLifespanShort-termMemorySaver (LangGraph)Per thread_id / sessionProcess lifetimeLong-termChromaDB (user_db)Per user_idPersistent across sessions
+    ↓
+[ Router Node (LLM) ]
+    ↓
+ ┌───────────────┬───────────────┬───────────────┐
+ │               │               │               │
+rag            web             llm
+ │               │               │
+ ↓               ↓               ↓
+[RAG]        [Web Search]    [LLM Direct]
+ │               │               │
+ └───────────────┴───────────────┘
+                ↓
+        [Generate Node]
+                ↓
+        [Summarize Node]
+                ↓
+             Response
+```
 
-Long-term memory is extracted asynchronously after each turn via asyncio.create_task() — it does not block response generation.
+---
 
+## 🧠 Memory Architecture
 
-📁 Project Structure
-smart-routing-agent/
-├── agent.py            # LangGraph graph definition, nodes, memory logic
-├── main.py             # FastAPI server, /chat endpoint
-├── requirements.txt    # Pinned dependencies
-├── .env.example        # Environment variable template
-├── .gitignore          # Excludes .env, chroma dirs, __pycache__
-├── memory_db/          # ChromaDB — user long-term memory (auto-created)
-├── vectore_db/         # ChromaDB — RAG knowledge base (manually populated)
-├── agent.log           # Rotating log file (daily, 7-day retention)
-└── README.md
+| Layer | Backend | Scope | Lifespan |
+|------|--------|------|----------|
+| Short-term | MemorySaver | Per thread | Runtime |
+| Long-term | ChromaDB | Per user | Persistent |
 
-📦 Installation
-1. Clone the repository
-bashgit clone https://github.com/alirazaaihub/smart.git-memory-chatbot.git
+> Long-term memory extraction runs asynchronously using `asyncio.create_task()`
+
+---
+
+## 📦 Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/alirazaaihub/smart-routing-agent.git
 cd smart-routing-agent
-2. Create and activate a virtual environment
-bashpython -m venv venv
-source venv/bin/activate        # Linux/Mac
-venv\Scripts\activate           # Windows
-3. Install dependencies
-bashpip install -r requirements.txt
-4. Configure environment variables
-bashcp .env.example .env
-Edit .env and fill in your keys:
-envGROQ_API_KEY=your_groq_api_key_here
-GOOGLE_API_KEY=your_google_api_key_here
-5. (Optional) Populate the RAG knowledge base
-Add your domain-specific documents to the vectore_db Chroma collection before running. The user_db collection is created automatically on first use.
-6. Run the server
-bashuvicorn main:app --reload
-API will be available at http://localhost:8000
 
-📡 API Reference
-POST /chat
-Send a query to the agent.
-Request Body:
-json{
+# 2. Create virtual environment
+python -m venv venv
+
+# Linux / Mac
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+```
+
+---
+
+## 🔑 Environment Setup
+
+Create a `.env` file:
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
+```
+
+---
+
+## ▶️ Usage
+
+### Start Server
+
+```bash
+uvicorn main:app --reload
+```
+
+### API Endpoint
+
+`POST /chat`
+
+### Example Request
+
+```json
+{
   "user_id": "ali_123",
   "query": "What are the latest trends in agentic AI?"
 }
-Response:
-json{
+```
+
+### Example Response
+
+```json
+{
   "user_id": "ali_123",
   "response": "Based on recent developments..."
 }
-GET /
-Health check endpoint.
-json{
-  "status": "running",
-  "memory": "thread-aware"
-}
+```
 
-🔀 Routing Logic
-The router classifies every incoming query into one of three paths:
-RouteTrigger ConditionExample QueriesragTechnical / internal / domain-specific knowledge"What's on our menu?", "How does X work in our system?"webCurrent events, news, real-time information"Latest AI news", "Today's weather"llmGeneral knowledge, conversation, reasoning"Explain recursion", "Write me a poem"
+---
 
-🔑 Environment Variables
-VariableDescriptionRequiredGROQ_API_KEYGroq API key for LLaMA inference✅ YesGOOGLE_API_KEYGoogle API key for Gemini embeddings✅ Yes
+## 📁 Project Structure
 
-📋 .env.example
-envGROQ_API_KEY=your_groq_api_key_here
-GOOGLE_API_KEY=your_google_api_key_here
+```
+smart-routing-agent/
+│
+├── agent.py
+├── main.py
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── memory_db/
+├── vectore_db/
+├── agent.log
+└── README.md
+```
 
-🚫 .gitignore
-gitignore.env
-__pycache__/
-*.pyc
-*.pyo
-memory_db/
-vectore_db/
-*.log
-venv/
-.venv/
+---
 
-📦 requirements.txt
-langchain>=0.3.0
-langchain-groq>=0.2.0
-langchain-google-genai>=2.0.0
-langchain-community>=0.3.0
-langchain-chroma>=0.1.4
-langgraph>=0.2.0
-fastapi>=0.115.0
-uvicorn>=0.30.0
-pydantic>=2.0.0
-chromadb>=0.5.0
+## 📋 Dependencies
 
-⚠️ Known Limitations
+```
+langchain
+langchain-groq
+langchain-google-genai
+langchain-community
+langchain-chroma
+langgraph
+fastapi
+uvicorn
+pydantic
+chromadb
+```
 
-MemorySaver is in-memory only — short-term conversation history resets on server restart. For production, replace with PostgresSaver or RedisSaver.
-DuckDuckGo is rate-limited — not suitable for high-traffic production use. Consider replacing with Tavily or Serper API.
-No authentication on the API layer — add JWT middleware before any public deployment.
+Install all:
 
+```bash
+pip install langchain langchain-groq langchain-google-genai langchain-community langchain-chroma langgraph fastapi uvicorn pydantic chromadb
+```
 
-🔮 Future Improvements
+---
 
- Replace MemorySaver with PostgresSaver for persistent short-term memory
- Add JWT-based authentication to the FastAPI layer
- Integrate Tavily API for reliable production web search
- Add DELETE /memory/{user_id} endpoint to clear user long-term memory
- Containerize with Docker
+## 🧩 Key Concepts Used
 
+| Concept | How It's Used |
+|--------|----------------|
+| Structured Routing | LLM outputs strict schema → no hallucinated decisions |
+| RAG Retrieval | ChromaDB used for domain-specific knowledge |
+| Web Search Routing | Real-time queries handled via external search |
+| Async Execution | All nodes async for scalability |
+| Short-Term Memory | Maintains conversation context per thread |
+| Long-Term Memory | Stores user facts persistently |
+| Auto Summarization | Prevents context overflow |
 
-🙋 About
-Built by Ali Raza — AI/ML Engineering Student, Punjab, Pakistan.
-Part of a self-directed agentic AI learning curriculum covering LangChain, LangGraph, RAG pipelines, fine-tuning, and MCP server development.
-📌 LinkedIn • GitHub
+---
 
-📄 License
+## ⚠️ Known Limitations
+
+- MemorySaver is in-memory only (resets on restart)  
+- DuckDuckGo is rate-limited (not production-ready)  
+- No authentication layer (not secure for public deployment)  
+
+---
+
+## 🔮 Future Improvements
+
+- Replace MemorySaver with Postgres / Redis  
+- Add JWT authentication  
+- Replace DuckDuckGo with Tavily / Serper  
+- Add memory deletion endpoint  
+- Dockerize the project  
+
+---
+
+## 🙋 About
+
+Built by **Ali Raza** — AI/ML Engineering Student, Pakistan.  
+Focused on Agentic AI, RAG systems, and production LLM applications.
+
+---
+
+## 📄 License
+
 MIT License — free to use and modify.
