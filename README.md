@@ -89,7 +89,7 @@ rag            web             llm
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/alirazaaihub/smart-routing-agent.git
+git clone https://github.com/alirazaaihub/smart-memory-chatbot.git
 cd smart-routing-agent
 
 # 2. Create virtual environment
@@ -204,24 +204,7 @@ pip install langchain langchain-groq langchain-google-genai langchain-community 
 | Auto Summarization | Prevents context overflow |
 
 ---
-
-## ⚠️ Known Limitations
-
-- MemorySaver is in-memory only (resets on restart)  
-- DuckDuckGo is rate-limited (not production-ready)  
-- No authentication layer (not secure for public deployment)  
-
----
-
-## 🔮 Future Improvements
-
-- Replace MemorySaver with Postgres / Redis  
-- Add JWT authentication  
-- Replace DuckDuckGo with Tavily / Serper  
-- Add memory deletion endpoint  
-- Dockerize the project  
-
----
+📌 [LinkedIn](www.linkedin.com/in/alirazaaihub)
 
 ## 🙋 About
 
